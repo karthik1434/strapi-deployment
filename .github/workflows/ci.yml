@@ -64,3 +64,4 @@ jobs:
       - name: Output image tag
         id: tag_output
         run: echo "image_tag=${{ env.DOCKER_IMAGE_TAG }}" >> $GITHUB_OUTPUT
+        #
