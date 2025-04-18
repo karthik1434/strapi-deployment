@@ -1,0 +1,56 @@
+name: Strapi Terraform Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+        default: 'latest'
+
+env:
+  DOCKER_HUB_REPOSITORY: your-dockerhub-username/strapi-app
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ./terraform
+        run: terraform plan -var="image_tag=${{ github.event.inputs.image_tag }}"
+
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: terraform apply -auto-approve -var="image_tag=${{ github.event.inputs.image_tag }}"
+
+      - name: Get Public IP
+        working-directory: ./terraform
+        id: ip
+        run: |
+          IP=$(terraform output -raw public_ip)
+          echo "public_ip=$IP" >> $GITHUB_OUTPUT
+
+      - name: Verify Deployment
+        run: |
+          echo "Verifying deployment at http://${{ steps.ip.outputs.public_ip }}:1337"
+          curl --retry 5 --retry-delay 10 --retry-connrefused http://${{ steps.ip.outputs.public_ip }}:1337
