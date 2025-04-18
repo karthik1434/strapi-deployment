@@ -8,8 +8,8 @@ variable "instance_type" {
   default     = "t2.micro"
 }
 
-variable "docker_repository" {
-  description = "Docker repository for Strapi image"
+variable "ecr_repo" {
+  description = "ecr repository for Strapi image"
   default     = "your-dockerhub-username/strapi-app"
 }
 
