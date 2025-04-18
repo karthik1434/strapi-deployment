@@ -1,15 +1,20 @@
-FROM strapi/strapi:4.1.5
+# Use official Strapi v3.6 image
+FROM strapi/strapi:3.6
 
 WORKDIR /app
 
+# Copy package.json first for better layer caching
+COPY package*.json ./
+RUN npm install
+
+# Copy the rest of the application
 COPY . .
 
-RUN npm install
+# Build Strapi (if needed)
+# RUN npm run build
 
 ENV NODE_ENV production
 
-RUN npm run build
-
 EXPOSE 1337
 
-CMD ["npm", "run", "start"]
+CMD ["npm", "start"]

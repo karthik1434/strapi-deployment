@@ -6,7 +6,7 @@ on:
 
 env:
   DOCKER_HUB_REPOSITORY: your-dockerhub-username/strapi-app
-  DOCKER_IMAGE_TAG: latest
+  DOCKER_IMAGE_TAG: 3.6
 
 jobs:
   build-and-push:

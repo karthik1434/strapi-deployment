@@ -15,5 +15,5 @@ variable "docker_repository" {
 
 variable "image_tag" {
   description = "Docker image tag to deploy"
-  default     = "latest"
+  default     = "3.6"
 }
