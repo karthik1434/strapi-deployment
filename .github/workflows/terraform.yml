@@ -53,15 +53,3 @@ jobs:
         working-directory: ./terraform
         run: terraform apply -auto-approve -var="image_tag=${{ steps.get-image-tag.outputs.image_tag }}" 
           
-
-      - name: Verify Deployment
-        run: |
-          echo "Verifying deployment at http://${{ steps.ip.outputs.public_ip }}:1337"
-          curl --retry 5 --retry-delay 10 --retry-connrefused http://${{ steps.ip.outputs.public_ip }}:1337
-
-      - name: Get Public IP
-        working-directory: ./terraform
-        id: ip
-        run: |
-          IP=$(terraform output -raw public_ip)
-          echo "public_ip=$IP" >> $GITHUB_OUTPUT
