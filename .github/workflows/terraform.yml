@@ -1,17 +1,14 @@
 name: Strapi Terraform Deployment
 
 on:
-  workflow_dispatch:
-    inputs:
-      image_tag:
-        description: 'Docker image tag to deploy'
-        required: true
-        default: 'latest'
-
+    workflow_run:
+      workflows: ["First Workflow - Build and Push Docker Image"]  # Name of the first workflow
+      types:
+        - completed
 env:
-  DOCKER_HUB_REPOSITORY: your-dockerhub-username/strapi-app
-  AWS_REGION: us-east-1
-
+  ECR_REPOSITORY: strapi-app-karthik       # Replace with your actual ECR repository name
+  AWS_REGION: us-east-1 
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 jobs:
   deploy:
     runs-on: ubuntu-latest

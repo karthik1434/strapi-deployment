@@ -11,5 +11,5 @@ systemctl enable docker
 # Pull and run the Strapi container
 docker run -d \
   -p 1337:1337 \
-  --name strapi \
+  --name strapi-app-karthik \
   ${docker_image}

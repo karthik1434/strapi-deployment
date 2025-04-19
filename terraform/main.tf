@@ -17,6 +17,8 @@ resource "aws_instance" "strapi" {
 
   vpc_security_group_ids = [aws_security_group.strapi.id]
 
+  user_data = file("${path.module}/user_data.sh")
+
   key_name = "karthik" 
 
 
