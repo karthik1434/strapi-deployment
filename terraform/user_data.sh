@@ -14,4 +14,4 @@ docker run -d \
   --name strapi-app-karthik \
   "$docker_image"
 
-  #
+  
