@@ -40,10 +40,11 @@ jobs:
         run: |
           IMAGE_TAG=$(curl -s -H "Authorization: Bearer ${{ github.token }}" \
           -H "Accept: application/vnd.github.v3+json" \
-          ${{ github.event.workflow_run.url }}/jobs | \
-          jq -r '.jobs[] | select(.name == "build-and-push") | .steps[] | select(.name == "Output image tag") | .outputs.image_tag')
+          ${{ github.event.workflow_run.url }} | \
+          jq -r '.outputs.image_tag')
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-
+          echo "Using image tag: $IMAGE_TAG"
+          
       - name: Terraform Plan
         working-directory: ./terraform
         run: terraform plan -var="image_tag=${{ steps.get-image-tag.outputs.image_tag }}"

@@ -64,3 +64,9 @@ jobs:
       - name: Output image tag
         id: tag_output
         run: echo "image_tag=${{ env.DOCKER_IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
+# Workflow outputs section (must be at root level, not inside jobs)
+outputs:
+  image_tag:
+    description: "The Docker image tag"
+    value: ${{ jobs.build-and-push.outputs.image_tag }}
