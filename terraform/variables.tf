@@ -10,5 +10,5 @@ variable "instance_type" {
 
 variable "image_tag" {
   description = "Docker image tag to deploy"
-  default     = "3.6"
+  default     = "latest"
 }

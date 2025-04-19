@@ -1,31 +1,22 @@
 #!/bin/bash
 
-# Exit immediately if any command fails
-set -e
-
 # Install dependencies
 apt-get update
-apt-get install -y \
-    docker.io \
-    awscli  # Needed for ECR login
+apt-get install -y docker.io
 
-# Add current user to docker group to avoid sudo
-usermod -aG docker $USER
+# Start Docker
+systemctl start docker
+systemctl enable docker
 
-# Start and enable Docker
-systemctl enable --now docker
+# Define your ECR image URI (replace with your actual values)
+docker_image="118273046134.dkr.ecr.us-east-1.amazonaws.com/strapi-app-karthik:latest"
 
-# Login to ECR (required to pull private images)
-aws ecr get-login-password --region ${AWS_REGION} | \
-  docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-
-# Stop and remove any existing container with the same name
-docker rm -f strapi-app-karthik || true
+# Login to ECR (ensure AWS CLI is installed and configured)
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin  118273046134.dkr.ecr.us-east-1.amazonaws.com
 
 # Pull and run the Strapi container
 docker run -d \
-  --name strapi-app-karthik \
   -p 1337:1337 \
-  --restart unless-stopped \
-  -e NODE_ENV=production \
-  ${docker_image}
+  --name strapi-app-karthik \
+  "$docker_image"
