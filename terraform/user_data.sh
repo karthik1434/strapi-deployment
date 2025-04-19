@@ -3,7 +3,7 @@
 # Install dependencies
 apt-get update
 apt-get install -y docker.io
-apt-get install awscli
+apt-get install -y awscli
 
 # Start Docker
 systemctl start docker
