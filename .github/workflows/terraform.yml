@@ -28,11 +28,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Get AWS Account ID
+        id: get-account-id
+        run: |
+          echo "account_id=$(aws sts get-caller-identity --query 'Account' --output text)" >> $GITHUB_OUTPUT
+
+
+
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | \
           docker login --username AWS --password-stdin \
-          ${{ steps.get-account-id.outputs.account_id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          118273046134.dkr.ecr.us-east-1.amazonaws.com/strapi-app-karthik
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
