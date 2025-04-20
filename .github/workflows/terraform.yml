@@ -1,11 +1,10 @@
 name: Strapi Terraform Deployment
 
 on:
-  workflow_run:
-    workflows: ["Strapi CI Pipeline"]
+  push:
     branches: [ "main" ]
-    types:
-      - completed
+  workflow_dispatch:  # Allows manual trigger
+
 
 env:
   ECR_REPOSITORY: strapi-app-karthik
