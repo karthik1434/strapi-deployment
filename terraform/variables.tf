@@ -14,11 +14,18 @@ variable "image_tag" {
 }
 
 variable "aws_access_key_id" {
+  description = "AWS access key ID"
   type        = string
-  description = "AWS access key for EC2 user_data"
+  sensitive   = true
 }
 
 variable "aws_secret_access_key" {
+  description = "AWS secret access key"
   type        = string
-  description = "AWS secret key for EC2 user_data"
+  sensitive   = true
+}
+
+variable "image_uri" {
+  description = "The ECR image URI for the Strapi container"
+  type        = string
 }
