@@ -28,6 +28,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ env.AWS_ACCOUNT_ID }}
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
@@ -51,5 +58,4 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./terraform
-        run: terraform apply -auto-approve -var="image_tag=${{ steps.get-image-tag.outputs.image_tag }}" 
-          
+        run: terraform apply -auto-approve -var="image_tag=${{ steps.get-image-tag.outputs.image_tag }}"
