@@ -3,6 +3,7 @@ name: Strapi CI Pipeline
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:  # 👈 allows manual trigger
 
 env:
   AWS_REGION: us-east-1
@@ -12,6 +13,8 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tag_output.outputs.image_tag }}
 
     steps:
       - name: Checkout code
@@ -62,6 +65,3 @@ jobs:
       - name: Output image tag
         id: tag_output
         run: echo "image_tag=${{ env.DOCKER_IMAGE_TAG }}" >> $GITHUB_OUTPUT
-
-    outputs:
-      image_tag: ${{ steps.tag_output.outputs.image_tag }}
