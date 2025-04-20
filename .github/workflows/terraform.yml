@@ -9,7 +9,7 @@ on:
 
 env:
   ECR_REPOSITORY: strapi-app-karthik
-  AWS_REGION: us-east-1 
+  AWS_REGION: us-east-1
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
 jobs:
@@ -33,13 +33,11 @@ jobs:
         run: |
           echo "account_id=$(aws sts get-caller-identity --query 'Account' --output text)" >> $GITHUB_OUTPUT
 
-
-
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | \
           docker login --username AWS --password-stdin \
-          118273046134.dkr.ecr.us-east-1.amazonaws.com/strapi-app-karthik
+          ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
@@ -53,17 +51,30 @@ jobs:
         run: |
           IMAGE_TAG=$(curl -s -H "Authorization: Bearer ${{ github.token }}" \
           -H "Accept: application/vnd.github.v3+json" \
-          ${{ github.event.workflow_run.url }} | \
-          jq -r '.outputs.image_tag')
+          ${{ github.event.workflow_run.url }} | jq -r '.outputs.image_tag')
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "Using image tag: $IMAGE_TAG"
-          
+
       - name: Terraform Plan
         working-directory: ./terraform
-        run: terraform plan
+        run: terraform plan -var="image_tag=${{ steps.get-image-tag.outputs.image_tag }}"
 
       - name: Terraform Apply
         working-directory: ./terraform
-        run: terraform apply -auto-approve
+        run: |
+          terraform apply -auto-approve \
+          -var="image_tag=${{ steps.get-image-tag.outputs.image_tag }}" \
           -var="aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
           -var="aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
+      - name: Get Public IP
+        working-directory: ./terraform
+        id: ip
+        run: |
+          IP=$(terraform output -raw public_ip)
+          echo "public_ip=$IP" >> $GITHUB_OUTPUT
+
+      - name: Verify Deployment
+        run: |
+          echo "Verifying deployment at http://${{ steps.ip.outputs.public_ip }}:1337"
+          curl --retry 5 --retry-delay 10 --retry-connrefused http://${{ steps.ip.outputs.public_ip }}:1337
