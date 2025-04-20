@@ -1,10 +1,11 @@
 name: Strapi Terraform Deployment
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Strapi CI Pipeline"]
     branches: [ "main" ]
-  workflow_dispatch:  # Allows manual trigger
-
+    types:
+      - completed
 
 env:
   ECR_REPOSITORY: strapi-app-karthik
@@ -43,7 +44,10 @@ jobs:
 
       - name: Terraform Plan
         working-directory: ./terraform
-        run: terraform plan -var="image_tag=latest"
+        run: |
+          terraform plan \
+          -var="image_tag=latest" \
+          -var="image_uri=${{ env.IMAGE_URI }}" \
 
       - name: Terraform Apply
         working-directory: ./terraform
