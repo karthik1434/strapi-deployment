@@ -3,7 +3,7 @@ name: Strapi CI Pipeline
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch:  # 👈 allows manual trigger
+  workflow_dispatch:  # Allows manual trigger
 
 env:
   AWS_REGION: us-east-1
