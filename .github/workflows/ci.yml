@@ -1,19 +1,21 @@
-name: Strapi CI Pipeline
+name: Strapi Terraform Deployment
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Strapi CI Pipeline"]
     branches: [ "main" ]
+    types:
+      - completed
 
 env:
-  AWS_REGION: us-east-1
   ECR_REPOSITORY: strapi-app-karthik
-  DOCKER_IMAGE_TAG: latest
+  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
 jobs:
-  build-and-push:
+  deploy:
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.tag_output.outputs.image_tag }}
+    environment: production
 
     steps:
       - name: Checkout code
@@ -31,36 +33,48 @@ jobs:
         run: |
           echo "account_id=$(aws sts get-caller-identity --query 'Account' --output text)" >> $GITHUB_OUTPUT
 
-      - name: Create ECR repository if not exists
-        run: |
-          aws ecr describe-repositories --repository-names $ECR_REPOSITORY || \
-          aws ecr create-repository --repository-name $ECR_REPOSITORY
-
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | \
           docker login --username AWS --password-stdin \
-          ${{ steps.get-account-id.outputs.account_id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}
 
-      - name: Set image URI
-        id: set-image-uri
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Get image tag from triggering workflow
+        id: get-image-tag
         run: |
-          echo "image_uri=${{ steps.get-account-id.outputs.account_id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.DOCKER_IMAGE_TAG }}" >> $GITHUB_OUTPUT
+          IMAGE_TAG=$(curl -s -H "Authorization: Bearer ${{ github.token }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          ${{ github.event.workflow_run.url }} | jq -r '.outputs.image_tag')
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "Using image tag: $IMAGE_TAG"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          driver: docker-container
+      - name: Terraform Plan
+        working-directory: ./terraform
+        run: terraform plan -var="image_tag=${{ steps.get-image-tag.outputs.image_tag }}"
 
-      - name: Build and push Docker image to ECR
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.set-image-uri.outputs.image_uri }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: |
+          terraform apply -auto-approve \
+          -var="image_tag=${{ steps.get-image-tag.outputs.image_tag }}" \
+          -var="aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+          -var="aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
 
-      - name: Output image tag
-        id: tag_output
-        run: echo "image_tag=${{ env.DOCKER_IMAGE_TAG }}" >> $GITHUB_OUTPUT
+      - name: Get Public IP
+        working-directory: ./terraform
+        id: ip
+        run: |
+          IP=$(terraform output -raw public_ip)
+          echo "public_ip=$IP" >> $GITHUB_OUTPUT
+
+      - name: Verify Deployment
+        run: |
+          echo "Verifying deployment at http://${{ steps.ip.outputs.public_ip }}:1337"
+          curl --retry 5 --retry-delay 10 --retry-connrefused http://${{ steps.ip.outputs.public_ip }}:1337
