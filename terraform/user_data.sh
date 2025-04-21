@@ -12,8 +12,8 @@ systemctl enable docker
 sleep 20
 
 # Configure AWS credentials (using environment variables)
-export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
-export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+export AWS_ACCESS_KEY_ID="$aws_access_key_id"
+export AWS_SECRET_ACCESS_KEY="$aws_secret_access_key"
 export AWS_DEFAULT_REGION="us-east-1"
 
 # Authenticate with ECR
