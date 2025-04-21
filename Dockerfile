@@ -1,39 +1,20 @@
-# Use official Strapi image with Node.js
-FROM strapi/base:latest
+# Use official Node.js image as base
+FROM node:18-alpine
 
-# Create and set working directory
-RUN mkdir -p /srv/app
-WORKDIR /srv/app
+# Set working directory inside the container
+WORKDIR /app
 
-# Create package.json manually
-RUN printf '{
-  "name": "strapi-app",
-  "version": "1.0.0",
-  "description": "Generated from Dockerfile",
-  "scripts": {
-    "start": "strapi start",
-    "build": "strapi build"
-  },
-  "dependencies": {
-    "strapi": "latest"
-  }
-}' > package.json
+# Copy only package.json and package-lock.json from the Strapi folder
+COPY strapi/package.json ./
 
-# Install dependencies
-RUN npm install --production && npm cache clean --force
+# Install Strapi dependencies
+RUN npm install --only=production
 
-# Copy rest of your app (optional, based on context)
-# COPY . .
+# Copy the entire Strapi backend app
+COPY strapi/ ./
 
-# Build the Strapi app
-RUN npm run build
-
-# Environment variables
-ENV NODE_ENV=production
-ENV PORT=1337
-
-# Expose port
+# Expose the default Strapi port
 EXPOSE 1337
 
-# Start the app
-CMD ["npm", "start"]
+# Start the Strapi server
+CMD ["npm", "run", "start"]
