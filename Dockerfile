@@ -1,23 +1,28 @@
-# Use official Strapi image
-FROM strapi/strapi:latest
+# Use official Strapi image with Node.js
+FROM strapi/base:latest
 
-# Set working directory explicitly (important!)
+# Create and set working directory
+RUN mkdir -p /srv/app
 WORKDIR /srv/app
 
-# Copy package.json and lock file
+# Copy package files first for better caching
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --production && npm cache clean --force
 
-# Copy the rest of the Strapi app
+# Copy all other files
 COPY . .
 
-# Set environment (optional if you handle via docker run)
-ENV NODE_ENV=production
+# Build the Strapi app (if needed)
+RUN npm run build
 
-# Expose the default port
+# Environment variables
+ENV NODE_ENV=production
+ENV PORT=1337
+
+# Expose port
 EXPOSE 1337
 
-# Start the app
+# Start command
 CMD ["npm", "start"]
