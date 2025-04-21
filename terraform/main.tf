@@ -17,15 +17,19 @@ resource "aws_instance" "strapi" {
 
   vpc_security_group_ids = [aws_security_group.strapi.id]
 
-  user_data = file("${path.module}/user_data.sh")
-
   key_name = "karthik" 
-
+  user_data = <<-EOF
+              #!/bin/bash
+              aws_access_key_id=${var.aws_access_key_id}
+              aws_secret_access_key=${var.aws_secret_access_key}
+              ${file("user_data.sh")}
+              EOF
 
   tags = {
     Name = "strapi-karthik"
   }
 }
+
 
 resource "aws_security_group" "strapi" {
   name = "strapi-security-group-karthik28"

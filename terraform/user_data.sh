@@ -8,12 +8,13 @@ apt-get install -y docker.io awscli
 systemctl start docker
 systemctl enable docker
 
+# Wait for Docker to initialize
 sleep 20
 
-aws configure set aws_access_key_id "${var.aws_access_key_id}"
-aws configure set aws_secret_access_key "${var.aws_secret_access_key}"
-aws configure set default.region "us-east-1"
-
+# Configure AWS credentials (using environment variables)
+export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+export AWS_DEFAULT_REGION="us-east-1"
 
 # Authenticate with ECR
 aws ecr get-login-password --region us-east-1 | \
