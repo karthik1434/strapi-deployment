@@ -21,6 +21,21 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Check and create ECR repo if not exists
+        run: |
+          REPO_NAME="strapi-app-karthik"
+          REGION="us-east-1"
+
+          # Check if the repo exists
+          aws ecr describe-repositories --repository-names "$REPO_NAME" --region $REGION > /dev/null 2>&1
+
+          if [ $? -ne 0 ]; then
+            echo "Repository $REPO_NAME does not exist. Creating it..."
+            aws ecr create-repository --repository-name "$REPO_NAME" --region $REGION
+          else
+            echo "Repository $REPO_NAME already exists. Skipping creation."
+          fi
+
       - name: Build, tag, and push Docker image
         working-directory: ./  # Build from root directory
         env:
