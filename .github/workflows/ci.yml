@@ -1,46 +1,67 @@
-name: Build and Push Docker Image
+name: Strapi CI Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: strapi-app-karthik
+  DOCKER_IMAGE_TAG: latest
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tag_output.outputs.image_tag }}
+
     steps:
-      - uses: actions/checkout@v3
-      
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get AWS Account ID
+        id: get-account-id
+        run: |
+          echo "account_id=$(aws sts get-caller-identity --query 'Account' --output text)" >> $GITHUB_OUTPUT
+
+      - name: Create ECR repository if not exists
+        run: |
+          aws ecr describe-repositories --repository-names $ECR_REPOSITORY || \
+          aws ecr create-repository --repository-name $ECR_REPOSITORY
 
       - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Check and create ECR repo if not exists
         run: |
-          REPO_NAME="strapi-app-karthik"
-          REGION="us-east-1"
+          aws ecr get-login-password --region $AWS_REGION | \
+          docker login --username AWS --password-stdin \
+          ${{ steps.get-account-id.outputs.account_id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
 
-          # Check if the repo exists
-          aws ecr describe-repositories --repository-names "$REPO_NAME" --region $REGION > /dev/null 2>&1
-
-          if [ $? -ne 0 ]; then
-            echo "Repository $REPO_NAME does not exist. Creating it..."
-            aws ecr create-repository --repository-name "$REPO_NAME" --region $REGION
-          else
-            echo "Repository $REPO_NAME already exists. Skipping creation."
-          fi
-
-      - name: Build, tag, and push Docker image
-        working-directory: ./  # Build from root directory
-        env:
-          ECR_REGISTRY: 118273046134.dkr.ecr.us-east-1.amazonaws.com
-          ECR_REPOSITORY: strapi-app-karthik
+      - name: Set image URI
+        id: set-image-uri
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image_uri=${{ steps.get-account-id.outputs.account_id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ env.DOCKER_IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker-container
+
+      - name: Build and push Docker image to ECR
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.set-image-uri.outputs.image_uri }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output image tag
+        id: tag_output
+        run: echo "image_tag=${{ env.DOCKER_IMAGE_TAG }}" >> $GITHUB_OUTPUT
