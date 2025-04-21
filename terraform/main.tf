@@ -28,7 +28,7 @@ resource "aws_instance" "strapi" {
 }
 
 resource "aws_security_group" "strapi" {
-  name = "strapi-security-group-karthik26"
+  name = "strapi-security-group-karthik27"
 
   ingress {
     from_port   = 1337
