@@ -5,16 +5,27 @@ FROM strapi/base:latest
 RUN mkdir -p /srv/app
 WORKDIR /srv/app
 
-# Copy package files first for better caching
-COPY package*.json ./
+# Create package.json manually
+RUN printf '{
+  "name": "strapi-app",
+  "version": "1.0.0",
+  "description": "Generated from Dockerfile",
+  "scripts": {
+    "start": "strapi start",
+    "build": "strapi build"
+  },
+  "dependencies": {
+    "strapi": "latest"
+  }
+}' > package.json
 
 # Install dependencies
 RUN npm install --production && npm cache clean --force
 
-# Copy all other files
-COPY . .
+# Copy rest of your app (optional, based on context)
+# COPY . .
 
-# Build the Strapi app (if needed)
+# Build the Strapi app
 RUN npm run build
 
 # Environment variables
@@ -24,5 +35,5 @@ ENV PORT=1337
 # Expose port
 EXPOSE 1337
 
-# Start command
+# Start the app
 CMD ["npm", "start"]
